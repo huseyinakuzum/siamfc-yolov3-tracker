@@ -1,0 +1,4 @@
+videos/*
+yolov3/yolov3.weights
+yolov3/__pycacahe__/*
+siamfc/__pycacahe__/*
