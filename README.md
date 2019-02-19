@@ -13,4 +13,4 @@ wget https://pjreddie.com/media/files/yolov3.weights
 [YoLoV3 PyTorch implementation](https://github.com/ayooshkathuria/pytorch-yolo-v3)
 
 
-#To be continued!
+# To be continued!
