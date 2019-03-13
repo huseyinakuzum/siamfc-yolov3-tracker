@@ -7,8 +7,10 @@ from siamfc.siamfc import SiamFCTracker
 
 
 class Tracker():
-    def __init__(self):
-        pass
+    def __init__(self, model_path='siamfc/models/siamfc_pretrained.pth', gpu_id=0):
+        self.model_path = model_path
+        self.gpu_id = gpu_id
+        self.filenames = ''
 
     def get_filenames_frames(self, video_dir):
         filenames = sorted(glob.glob(os.path.join(video_dir, "img/*.jpg")),
@@ -34,9 +36,15 @@ class Tracker():
                     cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 255, 0), 1)
         return frame
 
-    def track(self, video_dir, gpu_id=0,  model_path='siamfc/models/siamfc_pretrained.pth'):
+    def detect(self, idx, model, inp_dim):
+        person_detections = list(set(
+            filter(lambda x: x[1] == 'person', yolo(self.filenames[idx], model, inp_dim))))
+        return person_detections.sort(key=lambda x: (
+            x[0][2] * x[0][3]), reverse=True)
+
+    def track(self, video_dir):
         # load videos
-        filenames, frames = self.get_filenames_frames(video_dir)
+        self.filenames, frames = self.get_filenames_frames(video_dir)
 
         # extract person detections and sort it from largest to smallest
 
@@ -56,13 +64,11 @@ class Tracker():
                 bboxes.clear()
                 bboxes_colours.clear()
                 person_detections.clear()
-                person_detections = list(
-                    set(filter(lambda x: x[1] == 'person', yolo(filenames[idx], model, inp_dim))))
-                person_detections.sort(key=lambda x: (
-                    x[0][2] * x[0][3]), reverse=True)
+                person_detections = self.detect(idx, model, inp_dim)
 
                 for i, ix in enumerate(person_detections):
-                    trackers.append(SiamFCTracker(model_path, gpu_id))
+                    trackers.append(SiamFCTracker(
+                        self.model_path, self.gpu_id))
                     bboxes.append(ix[0])
                     bboxes_colours.append(
                         (randint(0, 255) % 255, randint(0, 255), randint(0, 255)))
@@ -79,3 +85,26 @@ class Tracker():
             frame = self.draw_frame(trackers, bboxes, bboxes_colours, idx)
             cv2.imshow(title, frame)
             cv2.waitKey(30)
+
+    def bb_intersection_over_union(self, boxA, boxB):
+        # determine the (x, y)-coordinates of the intersection rectangle
+        xA = max(boxA[0], boxB[0])
+        yA = max(boxA[1], boxB[1])
+        xB = min(boxA[2], boxB[2])
+        yB = min(boxA[3], boxB[3])
+
+        # compute the area of intersection rectangle
+        interArea = max(0, xB - xA + 1) * max(0, yB - yA + 1)
+
+        # compute the area of both the prediction and ground-truth
+        # rectangles
+        boxAArea = (boxA[2] - boxA[0] + 1) * (boxA[3] - boxA[1] + 1)
+        boxBArea = (boxB[2] - boxB[0] + 1) * (boxB[3] - boxB[1] + 1)
+
+        # compute the intersection over union by taking the intersection
+        # area and dividing it by the sum of prediction + ground-truth
+        # areas - the interesection area
+        iou = interArea / float(boxAArea + boxBArea - interArea)
+
+        # return the intersection over union value
+        return iou

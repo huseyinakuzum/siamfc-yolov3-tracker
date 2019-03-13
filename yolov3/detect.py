@@ -43,10 +43,8 @@ def get_test_input(input_dim, CUDA):
 
 def prepare_model(cfg='yolov3/cfg/yolov3.cfg', weights='yolov3/yolov3.weights', reso='416'):
     #Set up the neural network
-    print("Loading network.....")
     model = Darknet(cfg)
     model.load_weights(weights)
-    print("Network successfully loaded")
     model.net_info["height"] = reso
     inp_dim = int(model.net_info["height"])
     assert inp_dim % 32 == 0 
