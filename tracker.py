@@ -169,7 +169,7 @@ class Tracker():
 
             frame = self.draw_frame(bboxes, frame, idx)
             cv2.imshow(title, frame)
-            cv2.imwrite('det_'+str(idx) + '.jpg', frame)
+            cv2.imwrite('/dets/' + title + '/det_'+str(idx) + '.jpg', frame)
             cv2.waitKey(30)
 
     def bb_intersection_over_union(self, boxA, boxB):
