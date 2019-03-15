@@ -6,14 +6,17 @@ from yolov3.detect import yolo, prepare_model
 from siamfc.siamfc import SiamFCTracker
 
 class bbox():
-    def __init__(self, bbox, colour, tracker, id):
+    def __init__(self, box, colour, tracker, id):
         self.id = id
-        self.bbox = bbox
+        self.box = box
         self.colour = colour
         self.tracker = tracker
     
-    def init(self, frame):
-        self.tracker.init(frame, self.bbox)
+    def init_box(self, frame):
+        self.tracker.init(frame, self.box)
+        print(self.box)
+        self.box = (self.box[0]-1, self.box[1]-1, self.box[0] + self.box[2]-1, self.box[1] + self.box[3]-1)
+        print(self.box)
 
 
 class Tracker():
@@ -23,9 +26,10 @@ class Tracker():
         self.filenames = ''
         self.model, self.inp_dim = prepare_model()
 
-        self.DETECT_PER_FRAME = 10
-        self.UPPER_THRESHOLD = 0.6
-        self.LOWER_THRESHOLD = 0.3
+        self.DETECT_PER_FRAME = 5
+        self.UPPER_THRESHOLD = 0.8
+        self.LOWER_THRESHOLD = 0.1
+
     def get_filenames_frames(self, video_dir):
         filenames = sorted(glob.glob(os.path.join(video_dir, "img/*.jpg")),
                            key=lambda x: int(os.path.basename(x).split('.')[0]))
@@ -36,12 +40,12 @@ class Tracker():
                   for filename in filenames]
         return filenames, frames
 
-    def draw_frame(self, trackers, bboxes, bboxes_colours, frame_id):
-        for t in range(len(trackers)):
+    def draw_frame(self, bboxes, frame, frame_id):
+        for b, bbox in enumerate(bboxes):
             frame = cv2.rectangle(frame,
-                                  (int(bboxes[t][0]), int(bboxes[t][1])),
-                                  (int(bboxes[t][2]), int(bboxes[t][3])),
-                                  bboxes_colours[t],
+                                  (int(bbox.box[0]), int(bbox.box[1])),
+                                  (int(bbox.box[2]), int(bbox.box[3])),
+                                  bbox.colour,
                                   2)
         if len(frame.shape) == 3:
             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
@@ -53,8 +57,9 @@ class Tracker():
     def detect(self, idx):
         person_detections = list(set(
             filter(lambda x: x[1] == 'person', yolo(self.filenames[idx], self.model, self.inp_dim))))
-        return person_detections.sort(key=lambda x: (
+        person_detections.sort(key=lambda x: (
             x[0][2] * x[0][3]), reverse=True)
+        return person_detections
 
     def track(self, video_dir):
         # load videos
@@ -73,15 +78,13 @@ class Tracker():
         
 
         for idx, frame in enumerate(frames):
-            i
+
             if idx == 0:
                 first_detections = self.detect(0)
                 for i, ix in enumerate(first_detections):
-                    box =  bbox(ix[0], 
-                            (randint(0, 255) % 255, randint(0, 255), randint(0, 255)), 
-                            SiamFCTracker(self.model_path, self.gpu_id), 
-                            person_id)
-                    box.init(0)
+                    box = bbox(ix[0], (randint(0, 255) % 255, randint(0, 255), randint(0, 255)), SiamFCTracker(self.model_path, self.gpu_id), person_id)
+                    person_id += 1
+                    box.init_box(frame)
                     bboxes.append(box)
 
 
@@ -92,38 +95,37 @@ class Tracker():
                     best_box = None
                     best_person = None
                     for p, person in enumerate(person_detections):
-                        iou = self.bb_intersection_over_union(cbox.bbox, person[0])
+                        pbox = (person[0][0]-1, person[0][1]-1, person[0][0] + person[0][2]-1, person[0][1] + person[0][3]-1)
+                        iou = self.bb_intersection_over_union(cbox.box, pbox)
                         if iou > best_iou:
                             best_iou = iou
                             best_box = person[0]
                             best_person = person
-                    
+                
 
                     if best_iou > self.UPPER_THRESHOLD:
-                        cbox = best_box
-                        cbox.init(idx)
+                        cbox.box = best_box
+                        cbox.init_box(frame)
+                        person_detections.remove(best_person)
 
-                    else if best_iou < self.LOWER_THRESHOLD:
-                        bbox.remove(cbox)
+                    elif best_iou < self.LOWER_THRESHOLD:
+                        bboxes.remove(cbox)
 
-
-                for i, ix in enumerate(person_detections):
-                    trackers.append(SiamFCTracker(
-                        self.model_path, self.gpu_id))
-                    bboxes.append(ix[0])
-                    bboxes_colours.append(
-                        (randint(0, 255) % 255, randint(0, 255), randint(0, 255)))
-                for t, tx in enumerate(trackers):
-                    tx.init(frame, person_detections[t][0])
-                    bboxes[t] = (bboxes[t][0]-1, bboxes[t][1]-1,
-                                 bboxes[t][0] + bboxes[t][2]-1, bboxes[t][1] + bboxes[t][3]-1)
+                for p, person in enumerate(person_detections):
+                    box = bbox(person[0], 
+                            (randint(0, 255) % 255, randint(0, 255), randint(0, 255)), 
+                            SiamFCTracker(self.model_path, self.gpu_id), 
+                            person_id)
+                    person_id += 1
+                    box.init_box(frame)
+                    bboxes.append(box)
 
             else:
-                for t, tx in enumerate(trackers):
-                    bboxes[t] = tx.update(frame, idx)
+                for c, cbox in enumerate(bboxes):
+                    cbox.box = cbox.tracker.update(frame, idx)
             # bbox xmin ymin xmax ymax
 
-            frame = self.draw_frame(trackers, bboxes, bboxes_colours, idx)
+            frame = self.draw_frame(bboxes, frame, idx)
             cv2.imshow(title, frame)
             cv2.waitKey(30)
 
