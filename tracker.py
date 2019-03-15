@@ -5,18 +5,30 @@ import cv2
 from yolov3.detect import yolo, prepare_model
 from siamfc.siamfc import SiamFCTracker
 
+
 class bbox():
     def __init__(self, box, colour, tracker, id):
         self.id = id
         self.box = box
         self.colour = colour
         self.tracker = tracker
-    
+
+    def convert_xywh_to_xyxy(self):
+        self.box = self.box[0]-1, self.box[1]-1, self.box[0] + \
+            self.box[2]-1, self.box[1]+self.box[3]-1
+
+    def convert_xyxy_to_xywh(self):
+        self.box = self.box[0]+1, self.box[1]+1, self.box[2] - \
+            self.box[0]+1, self.box[3]-self.box[1]+1
+
     def init_box(self, frame):
+        """
+        bbox: one-based bounding box[x, y, width, height]
+        input should be one-based. It makes the conversion to zero based inside init function
+        output of yolo is already one-based
+        """
         self.tracker.init(frame, self.box)
-        print(self.box)
-        self.box = (self.box[0]-1, self.box[1]-1, self.box[0] + self.box[2]-1, self.box[1] + self.box[3]-1)
-        print(self.box)
+        self.convert_xywh_to_xyxy()
 
 
 class Tracker():
@@ -40,6 +52,12 @@ class Tracker():
                   for filename in filenames]
         return filenames, frames
 
+    def convert_xywh_to_xyxy(self, yolo):
+        return (yolo[0]-1, yolo[1]-1, yolo[0]+yolo[2]-1, yolo[1]+yolo[3]-1)
+
+    def convert_xyxy_to_xywh(self, yolo):
+        return (yolo[0]+1, yolo[1]+1, yolo[2]-yolo[0]+1, yolo[3]-yolo[1]+1)
+
     def draw_frame(self, bboxes, frame, frame_id):
         for b, bbox in enumerate(bboxes):
             frame = cv2.rectangle(frame,
@@ -59,13 +77,12 @@ class Tracker():
             filter(lambda x: x[1] == 'person', yolo(self.filenames[idx], self.model, self.inp_dim))))
         person_detections.sort(key=lambda x: (
             x[0][2] * x[0][3]), reverse=True)
+
         return person_detections
 
     def track(self, video_dir):
         # load videos
         self.filenames, frames = self.get_filenames_frames(video_dir)
-
-        # extract person detections and sort it from largest to smallest
 
         title = video_dir.split('/')[-1]
         # starting tracking
@@ -75,18 +92,17 @@ class Tracker():
         bboxes_colours = []
         person_detections = []
         person_id = 0
-        
 
         for idx, frame in enumerate(frames):
 
             if idx == 0:
                 first_detections = self.detect(0)
                 for i, ix in enumerate(first_detections):
-                    box = bbox(ix[0], (randint(0, 255) % 255, randint(0, 255), randint(0, 255)), SiamFCTracker(self.model_path, self.gpu_id), person_id)
+                    box = bbox(ix[0], (randint(0, 255) % 255, randint(0, 255), randint(
+                        0, 255)), SiamFCTracker(self.model_path, self.gpu_id), person_id)
                     person_id += 1
                     box.init_box(frame)
                     bboxes.append(box)
-
 
             if idx % self.DETECT_PER_FRAME == 0:
                 person_detections = self.detect(idx)
@@ -95,33 +111,41 @@ class Tracker():
                     best_box = None
                     best_person = None
                     for p, person in enumerate(person_detections):
-                        pbox = (person[0][0]-1, person[0][1]-1, person[0][0] + person[0][2]-1, person[0][1] + person[0][3]-1)
-                        iou = self.bb_intersection_over_union(cbox.box, pbox)
+                        pbox = person[0]
+                        # cbox.box = xyxy
+                        # pbox = xywh
+                        # iou takes xyxy, xyxy
+                        iou = self.bb_intersection_over_union(
+                            cbox.box, self.convert_xywh_to_xyxy(pbox))
                         if iou > best_iou:
                             best_iou = iou
-                            best_box = person[0]
+                            best_box = pbox
                             best_person = person
-                
 
                     if best_iou > self.UPPER_THRESHOLD:
+                        # best_box = xywh
                         cbox.box = best_box
                         cbox.init_box(frame)
                         person_detections.remove(best_person)
 
                     elif best_iou < self.LOWER_THRESHOLD:
                         bboxes.remove(cbox)
+                    else:
+                        person_detections.remove(best_person)
 
                 for p, person in enumerate(person_detections):
-                    box = bbox(person[0], 
-                            (randint(0, 255) % 255, randint(0, 255), randint(0, 255)), 
-                            SiamFCTracker(self.model_path, self.gpu_id), 
-                            person_id)
+                    box = bbox(person[0],
+                               (randint(0, 255) %
+                                255, randint(0, 255), randint(0, 255)),
+                               SiamFCTracker(self.model_path, self.gpu_id),
+                               person_id)
                     person_id += 1
                     box.init_box(frame)
                     bboxes.append(box)
 
             else:
                 for c, cbox in enumerate(bboxes):
+                    # bounding box[x1, y1, x2, y2]
                     cbox.box = cbox.tracker.update(frame, idx)
             # bbox xmin ymin xmax ymax
 
@@ -130,6 +154,17 @@ class Tracker():
             cv2.waitKey(30)
 
     def bb_intersection_over_union(self, boxA, boxB):
+        """
+        bbox: one-based bounding box[x, y, width, height] is the input
+
+        converting to zero-based bounding box[x1, y1, x2, y2]
+
+        making the conversion inside
+        """
+
+        # make conversion
+        boxA = self.convert_one_based_to_zero_based(boxA)
+        boxB = self.convert_one_based_to_zero_based(boxB)
         # determine the (x, y)-coordinates of the intersection rectangle
         xA = max(boxA[0], boxB[0])
         yA = max(boxA[1], boxB[1])
