@@ -12,6 +12,7 @@ class bbox():
         self.box = box
         self.colour = colour
         self.tracker = tracker
+        self.mid_points = []
 
     def convert_xywh_to_xyxy(self):
         self.box = self.box[0]-1, self.box[1]-1, self.box[0] + \
@@ -21,6 +22,14 @@ class bbox():
         self.box = self.box[0]+1, self.box[1]+1, self.box[2] - \
             self.box[0]+1, self.box[3]-self.box[1]+1
 
+    def mid_point(self):
+        # bbox: one-based bounding box[x1, y1, x2, y2]
+        return (int((self.box[0] + self.box[1])/2),
+                int((self.box[1] + self.box[3])/2))
+
+    def add_mid_point(self):
+        self.mid_points.append(self.mid_point())
+
     def init_box(self, frame):
         """
         bbox: one-based bounding box[x, y, width, height]
@@ -29,6 +38,7 @@ class bbox():
         """
         self.tracker.init(frame, self.box)
         self.convert_xywh_to_xyxy()
+        self.add_mid_point()
 
 
 class Tracker():
@@ -60,17 +70,24 @@ class Tracker():
 
     def draw_frame(self, bboxes, frame, frame_id):
         for b, bbox in enumerate(bboxes):
+            # draw rectangle bbox:[x1,y1,x2,y2]
             frame = cv2.rectangle(frame,
                                   (int(bbox.box[0]), int(bbox.box[1])),
                                   (int(bbox.box[2]), int(bbox.box[3])),
                                   bbox.colour,
                                   2)
+            # add line between each frame
+            mid_point = bbox.mid_point()
+            for m, mp in bbox.mid_points:
+                if m != 0:
+                    frame = cv2.line(
+                        frame, mp, bbox.mid_points[m-1], bbox.colour)
         if len(frame.shape) == 3:
             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
         cv2.putText(frame, str(frame_id), (5, 20),
                     cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 255, 0), 1)
-        return frame
+        return frame, mid_point
 
     def detect(self, idx):
         person_detections = list(set(
@@ -147,6 +164,7 @@ class Tracker():
                 for c, cbox in enumerate(bboxes):
                     # bounding box[x1, y1, x2, y2]
                     cbox.box = cbox.tracker.update(frame, idx)
+                    cbox.add_mid_point()
             # bbox xmin ymin xmax ymax
 
             frame = self.draw_frame(bboxes, frame, idx)
@@ -155,16 +173,9 @@ class Tracker():
 
     def bb_intersection_over_union(self, boxA, boxB):
         """
-        bbox: one-based bounding box[x, y, width, height] is the input
-
-        converting to zero-based bounding box[x1, y1, x2, y2]
-
-        making the conversion inside
+        bbox: one-based bounding box[x1, y1, x2, y2] is the input
         """
 
-        # make conversion
-        boxA = self.convert_one_based_to_zero_based(boxA)
-        boxB = self.convert_one_based_to_zero_based(boxB)
         # determine the (x, y)-coordinates of the intersection rectangle
         xA = max(boxA[0], boxB[0])
         yA = max(boxA[1], boxB[1])
