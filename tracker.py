@@ -78,16 +78,16 @@ class Tracker():
                                   2)
             # add line between each frame
             mid_point = bbox.mid_point()
-            for m, mp in bbox.mid_points:
+            for m in range(1, len(bbox.mid_points) - 1):
                 if m != 0:
                     frame = cv2.line(
-                        frame, mp, bbox.mid_points[m-1], bbox.colour)
+                        frame, bbox.mid_points[m-1], bbox.mid_points[m], bbox.colour)
         if len(frame.shape) == 3:
             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
         cv2.putText(frame, str(frame_id), (5, 20),
                     cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 255, 0), 1)
-        return frame, mid_point
+        return frame
 
     def detect(self, idx):
         person_detections = list(set(
