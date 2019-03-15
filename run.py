@@ -18,7 +18,7 @@ def arg_parse():
 
 def main(args):
     tracker = Tracker()
-    tracker.track('/home/husampa/Projects/siamfc-yolov3-tracker/videos/bolt2')
+    tracker.track(args.video)
 
 
 if __name__ == "__main__":
