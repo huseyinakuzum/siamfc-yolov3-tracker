@@ -12,12 +12,13 @@ def arg_parse():
         description='YOLOv3 - SiamFC Object Tracking Module')
     parser.add_argument("--video", dest='video', help="Video to run tracking upon",
                         default="/home/husampa/Projects/siamfc-yolov3-tracker/videos/bolt2", type=str)
-
+    parser.add_argument("--title",  help="Video to run tracking upon",
+                        default="", type=str)
     return parser.parse_args()
 
 
 def main(args):
-    tracker = Tracker()
+    tracker = Tracker(title=args.title)
     tracker.track(args.video)
 
 

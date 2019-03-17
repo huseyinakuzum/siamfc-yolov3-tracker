@@ -20,7 +20,7 @@ def get_images_from_dir(path, extension='jpg'):
 def convert_frames_to_video(pathIn, pathOut, fps):
     frame_array = []
     files = get_images_from_dir(pathIn)
-
+    size = (0,0)
     for i, filename in enumerate(files):
         # reading each files
         img = cv2.imread(filename)
@@ -44,16 +44,17 @@ def get_frames(video):
     print(success)
     while success:
         # save frame as JPEG file
-        imwrite("VideoDeneme/terrace/frames/frame%d.jpg" % count, image)
+        imwrite("/home/husampa/Projects/siamfc-yolov3-tracker/VideoDeneme/chineserest/frames/frame%d.jpg" % count, image)
         success, image = vidcap.read()
         print('Read a new frame: ', success)
         count += 1
 
 
-imgs = get_images_from_dir("VideoDeneme/terrace/frames")
-pathIn = 'VideoDeneme/terrace/frames/'
-pathOut = 'video.avi'
-fps = 25.0
-convert_frames_to_video(pathIn, pathOut, fps)
+if __name__ == "__main__":
+    imgs = get_images_from_dir("VideoDeneme/terrace0/frames")
+    pathIn = '/home/husampa/Projects/siamfc-yolov3-tracker/dets/chineserest'
+    pathOut = '/home/husampa/Projects/siamfc-yolov3-tracker/dets/chineserest.avi'
+    fps = 25.0
+    #convert_frames_to_video(pathIn, pathOut, fps)
 
-# get_frames("VideoDeneme/terrace/video/terrace1-c0.avi")
+    #get_frames("/home/husampa/Projects/siamfc-yolov3-tracker/VideoDeneme/chineserest/video/chineserestaruant.avi")

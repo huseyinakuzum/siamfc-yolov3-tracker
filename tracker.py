@@ -5,6 +5,7 @@ import cv2
 from yolov3.detect import yolo, prepare_model
 from siamfc.siamfc import SiamFCTracker
 from video_utils import convert_frames_to_video
+from string import digits
 
 
 class bbox():
@@ -43,22 +44,24 @@ class bbox():
 
 
 class Tracker():
-    def __init__(self, model_path='siamfc/models/siamfc_pretrained.pth', gpu_id=0):
+    def __init__(self, model_path='siamfc/models/siamfc_pretrained.pth', title='', gpu_id=0):
         self.model_path = model_path
         self.gpu_id = gpu_id
         self.filenames = ''
         self.model, self.inp_dim = prepare_model()
-
-        self.DETECT_PER_FRAME = 5
-        self.UPPER_THRESHOLD = 0.8
+        self.title = title
+        self.DETECT_PER_FRAME = 12
+        self.UPPER_THRESHOLD = 0.7
         self.LOWER_THRESHOLD = 0.1
 
     def get_filenames_frames(self, video_dir):
-        filenames = sorted(glob.glob(os.path.join(video_dir, "img/*.jpg")),
-                           key=lambda x: int(os.path.basename(x).split('.')[0]))
+        filenames = sorted(glob.glob(os.path.join(video_dir, "*.jpg")),
+                           key=lambda x: int(''.join(c for c in os.path.basename(x).split('.')[0] if c in digits)))
+
         if len(filenames) == 0:
             filenames = sorted(glob.glob(os.path.join(video_dir, "*.jpg")),
-                               key=lambda x: int(os.path.basename(x).split('.')[0]))
+                           key=lambda x: int(''.join(c for c in os.path.basename(x).split('.')[0] if c in digits)))
+
         frames = [cv2.cvtColor(cv2.imread(filename), cv2.COLOR_BGR2RGB)
                   for filename in filenames]
         return filenames, frames
@@ -77,6 +80,11 @@ class Tracker():
                                   (int(bbox.box[2]), int(bbox.box[3])),
                                   bbox.colour,
                                   2)
+  
+            cv2.putText(frame, "id: " + str(bbox.id),
+            (int(bbox.box[0])+3, int(bbox.box[1])+12),
+             cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, bbox.colour, 1)
+            
             # add line between each frame
             mid_point = bbox.mid_point()
             for m in range(1, len(bbox.mid_points) - 1):
@@ -101,19 +109,31 @@ class Tracker():
     def track(self, video_dir):
         # load videos
         self.filenames, frames = self.get_filenames_frames(video_dir)
-        video_dir_list = video_dir.split('/')
-        if video_dir_list[-1] == "":
-            video_dir_list.remove("")
         
-        title = video_dir_list[-1]
-        if "MOT16" in video_dir_list:
-            title = video_dir_list[len(video_dir_list) - 2]
-        # starting tracking
+        if self.title == '':
+            video_dir_list = video_dir.split('/')
+            self.title = video_dir_list[-2]
+
+            if video_dir_list[-1] == "":
+                video_dir_list.remove("")
+            
+            if "MOT16" in video_dir_list:
+                self.title = video_dir_list[len(video_dir_list) - 2]
+            # starting tracking
 
         
 
         # starting tracking
-        outPath = 'dets/' + title + '/'
+        framesPath = 'dets/' + self.title + '/'
+        videoPath = 'det_videos/' + self.title + '/'
+        if not os.path.exists(framesPath):
+            os.makedirs(framesPath)
+
+        if not os.path.exists(videoPath):
+            os.makedirs(videoPath)
+
+        print(framesPath)
+        print(videoPath)
         trackers = []
         bboxes = []
         person_detections = []
@@ -124,6 +144,7 @@ class Tracker():
             if idx == 0:
                 first_detections = self.detect(0)
                 for i, ix in enumerate(first_detections):
+                    print(ix)
                     box = bbox(ix[0], (randint(0, 255) % 255, randint(0, 255), randint(
                         0, 255)), SiamFCTracker(self.model_path, self.gpu_id), person_id)
                     person_id += 1
@@ -177,11 +198,11 @@ class Tracker():
             # bbox xmin ymin xmax ymax
 
             frame = self.draw_frame(bboxes, frame, idx)
-            cv2.imshow(title, frame)
-            cv2.imwrite(outPath + 'det_'+str(idx) + '.jpg', frame)
+            cv2.imshow(self.title, frame)
+            cv2.imwrite(framesPath + 'det_'+str(idx) + '.jpg', frame)
             cv2.waitKey(30)
 
-        self.images_to_video(title, outPath)
+        self.images_to_video(framesPath, videoPath)
 
     def bb_intersection_over_union(self, boxA, boxB):
         """
@@ -210,5 +231,5 @@ class Tracker():
         # return the intersection over union value
         return iou
 
-    def images_to_video(self, title, outPath):
-        convert_frames_to_video(outPath, outPath+title + '.avi', 25.0)
+    def images_to_video(self, framesPath, videoPath):  
+        convert_frames_to_video(framesPath, videoPath + self.title + '.avi', 25.0)
