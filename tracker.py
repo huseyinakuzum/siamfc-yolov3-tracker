@@ -24,7 +24,7 @@ class bbox():
 
     def mid_point(self):
         # bbox: one-based bounding box[x1, y1, x2, y2]
-        return (int((self.box[0] + self.box[1])/2),
+        return (int((self.box[0] + self.box[2])/2),
                 int((self.box[1] + self.box[3])/2))
 
     def add_mid_point(self):
@@ -100,13 +100,17 @@ class Tracker():
     def track(self, video_dir):
         # load videos
         self.filenames, frames = self.get_filenames_frames(video_dir)
-
-        title = video_dir.split('/')[-1]
+        video_dir_list = video_dir.split('/')
+        if video_dir_list[-1] == "":
+            video_dir_list.remove("")
+        
+        title = video_dir_list[-1]
+        if "MOT16" in video_dir_list:
+            title = video_dir_list[len(video_dir_list) - 2]
         # starting tracking
 
-        trackers = []
+        
         bboxes = []
-        bboxes_colours = []
         person_detections = []
         person_id = 0
 
@@ -169,7 +173,7 @@ class Tracker():
 
             frame = self.draw_frame(bboxes, frame, idx)
             cv2.imshow(title, frame)
-            cv2.imwrite('/dets/' + title + '/det_'+str(idx) + '.jpg', frame)
+            cv2.imwrite(os.getcwd() + '/dets/' + title +'/det_'+str(idx) + '.jpg', frame)
             cv2.waitKey(30)
 
         self.images_to_video(title)
@@ -203,7 +207,7 @@ class Tracker():
 
     def images_to_video(self, title):
         img_array = []
-        for filename in glob.glob('/dets/' + title + '/*.jpg'):
+        for filename in glob.glob(os.getcwd() + '/dets/' + title + '/*.jpg'):
             img = cv2.imread(filename)
             height, width, layers = img.shape
             size = (width, height)
