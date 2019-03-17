@@ -5,3 +5,4 @@ siamfc/__pycacahe__/*
 dets/*
 det_videos/*
 __pycacahe__/*
+.pylintrc
