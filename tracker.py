@@ -4,6 +4,7 @@ from random import randint
 import cv2
 from yolov3.detect import yolo, prepare_model
 from siamfc.siamfc import SiamFCTracker
+from video_utils import convert_frames_to_video
 
 
 class bbox():
@@ -102,8 +103,9 @@ class Tracker():
         self.filenames, frames = self.get_filenames_frames(video_dir)
 
         title = video_dir.split('/')[-1]
-        # starting tracking
 
+        # starting tracking
+        outPath = 'dets/' + title + '/'
         trackers = []
         bboxes = []
         bboxes_colours = []
@@ -169,10 +171,10 @@ class Tracker():
 
             frame = self.draw_frame(bboxes, frame, idx)
             cv2.imshow(title, frame)
-            cv2.imwrite('/dets/' + title + '/det_'+str(idx) + '.jpg', frame)
+            cv2.imwrite(outPath + 'det_'+str(idx) + '.jpg', frame)
             cv2.waitKey(30)
 
-        self.images_to_video(title)
+        self.images_to_video(title, outPath)
 
     def bb_intersection_over_union(self, boxA, boxB):
         """
@@ -201,17 +203,5 @@ class Tracker():
         # return the intersection over union value
         return iou
 
-    def images_to_video(self, title):
-        img_array = []
-        for filename in glob.glob('/dets/' + title + '/*.jpg'):
-            img = cv2.imread(filename)
-            height, width, layers = img.shape
-            size = (width, height)
-            img_array.append(img)
-
-        out = cv2.VideoWriter(
-            title + '.avi', cv2.VideoWriter_fourcc(*'DIVX'), 15, size)
-
-        for i in range(len(img_array)):
-            out.write(img_array[i])
-        out.release()
+    def images_to_video(self, title, outPath):
+        convert_frames_to_video(outPath, outPath+title + '.avi', 25.0)
