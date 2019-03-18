@@ -11,17 +11,20 @@ sys.path.append(os.getcwd())
 from yolov3.detect import yolo, prepare_model
 from fire import Fire
 from tqdm import tqdm
-
+from string import digits 
 from siamfc.siamfc import SiamFCTracker
 
 
 def main(video_dir, gpu_id=0,  model_path='siamfc/models/siamfc_pretrained.pth'):
     # load videos
     filenames = sorted(glob.glob(os.path.join(video_dir, "img/*.jpg")),
-                       key=lambda x: int(os.path.basename(x).split('.')[0]))
+                       key=lambda x: int(''.join(c for c in os.path.basename(x).split('.')[0] if c in digits)))
     if len(filenames) == 0:
+
+
+        
         filenames = sorted(glob.glob(os.path.join(video_dir, "*.jpg")),
-                           key=lambda x: int(os.path.basename(x).split('.')[0]))
+                           key=lambda x: int(''.join(c for c in os.path.basename(x).split('.')[0] if c in digits)))
 
     frames = [cv2.cvtColor(cv2.imread(filename), cv2.COLOR_BGR2RGB)
               for filename in filenames]
@@ -48,6 +51,7 @@ def main(video_dir, gpu_id=0,  model_path='siamfc/models/siamfc_pretrained.pth')
                 set(filter(lambda x: x[1] == 'person', yolo(filenames[idx], model, inp_dim))))
             person_detections.sort(key=lambda x: (
                 x[0][2] * x[0][3]), reverse=True)
+                
             for i in range(len(person_detections)):
                 trackers.append(SiamFCTracker(model_path, gpu_id))
                 bboxes.append(person_detections[i][0])

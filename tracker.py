@@ -50,7 +50,7 @@ class Tracker():
         self.filenames = ''
         self.model, self.inp_dim = prepare_model()
         self.title = title
-        self.DETECT_PER_FRAME = 12
+        self.DETECT_PER_FRAME = 50
         self.UPPER_THRESHOLD = 0.7
         self.LOWER_THRESHOLD = 0.1
 
@@ -83,7 +83,7 @@ class Tracker():
   
             cv2.putText(frame, "id: " + str(bbox.id),
             (int(bbox.box[0])+3, int(bbox.box[1])+12),
-             cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, bbox.colour, 1)
+                cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, bbox.colour, 1)
             
             # add line between each frame
             mid_point = bbox.mid_point()
@@ -94,8 +94,8 @@ class Tracker():
         if len(frame.shape) == 3:
             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
-        cv2.putText(frame, str(frame_id), (5, 20),
-                    cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 255, 0), 1)
+        cv2.putText(frame, str(frame_id), (5, 20), 
+            cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 255, 0), 1)
         return frame
 
     def detect(self, idx):
@@ -134,7 +134,6 @@ class Tracker():
 
         print(framesPath)
         print(videoPath)
-        trackers = []
         bboxes = []
         person_detections = []
         person_id = 0
@@ -232,4 +231,4 @@ class Tracker():
         return iou
 
     def images_to_video(self, framesPath, videoPath):  
-        convert_frames_to_video(framesPath, videoPath + self.title + '.avi', 25.0)
+        convert_frames_to_video(framesPath, videoPath + self.title + '_' + str(self.DETECT_PER_FRAME) + '.avi', 25.0)
