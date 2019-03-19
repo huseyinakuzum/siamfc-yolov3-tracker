@@ -1,4 +1,4 @@
-videos/*
+ideos/*
 yolov3/yolov3.weights
 yolov3/__pycacahe__/*
 siamfc/__pycacahe__/*
@@ -6,3 +6,5 @@ dets/*
 det_videos/*
 __pycacahe__/*
 .pylintrc
+
+.vscode/*
