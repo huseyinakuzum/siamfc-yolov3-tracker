@@ -50,7 +50,7 @@ class Tracker():
         self.filenames = ''
         self.model, self.inp_dim = prepare_model()
         self.title = title
-        self.DETECT_PER_FRAME = 50
+        self.DETECT_PER_FRAME = 10
         self.UPPER_THRESHOLD = 0.7
         self.LOWER_THRESHOLD = 0.1
 
@@ -104,6 +104,8 @@ class Tracker():
         person_detections.sort(key=lambda x: (
             x[0][2] * x[0][3]), reverse=True)
 
+        if len(person_detections) > 20:
+            return person_detections[:19]
         return person_detections
 
     def track(self, video_dir):
@@ -175,7 +177,8 @@ class Tracker():
                         person_detections.remove(best_person)
 
                     elif best_iou < self.LOWER_THRESHOLD:
-                        bboxes.remove(cbox)
+                        pass
+                        #bboxes.remove(cbox)
                     else:
                         person_detections.remove(best_person)
 
@@ -197,8 +200,9 @@ class Tracker():
             # bbox xmin ymin xmax ymax
 
             frame = self.draw_frame(bboxes, frame, idx)
-            cv2.imshow(self.title, frame)
-            cv2.imwrite(framesPath + 'det_'+str(idx) + '.jpg', frame)
+            #cv2.imshow(self.title, frame)
+            print(str(idx+553))
+            cv2.imwrite(framesPath + 'det_'+str(idx + 553) + '.jpg', frame)
             cv2.waitKey(30)
 
         self.images_to_video(framesPath, videoPath)

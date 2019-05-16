@@ -4,7 +4,6 @@ import torch.optim as optim
 import torchvision.transforms as transforms
 import torchvision
 import numpy as np
-import pandas as pd
 import os
 import cv2
 import pickle
