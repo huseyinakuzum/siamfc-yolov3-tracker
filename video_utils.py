@@ -27,34 +27,34 @@ def convert_frames_to_video(pathIn, pathOut, fps):
         height, width, layers = img.shape
         size = (width, height)
         print(filename)
+        img = cv2.resize(img, (1280, 720), interpolation = cv2.INTER_LINEAR)
+        #cv2.imshow('test', img)
+        #cv2.waitKey(30)
         # inserting the frames into an image array
         frame_array.append(img)
 
-    out = cv2.VideoWriter(pathOut, cv2.VideoWriter_fourcc(*'DIVX'), fps, size)
+
+    out = cv2.VideoWriter(pathOut, cv2.VideoWriter_fourcc(*'DIVX'), fps, (1280, 720))
 
     for i, frame in enumerate(frame_array):
         out.write(frame)
     out.release()
 
 
-def get_frames(video):
+def get_frames(video, outpath):
+    print(video)
     vidcap = VideoCapture(video)
     success, image = vidcap.read()
     count = 0
     print(success)
     while success:
         # save frame as JPEG file
-        imwrite("/home/husampa/Projects/siamfc-yolov3-tracker/VideoDeneme/chineserest/frames/frame%d.jpg" % count, image)
+        imwrite(outpath +"_frame%d.jpg" % count, image)
         success, image = vidcap.read()
         print('Read a new frame: ', success)
+        success = True
         count += 1
 
 
 if __name__ == "__main__":
-    imgs = get_images_from_dir("VideoDeneme/terrace0/frames")
-    pathIn = '/home/husampa/Projects/siamfc-yolov3-tracker/dets/chineserest'
-    pathOut = '/home/husampa/Projects/siamfc-yolov3-tracker/dets/chineserest.avi'
-    fps = 25.0
-    #convert_frames_to_video(pathIn, pathOut, fps)
-
-    #get_frames("/home/husampa/Projects/siamfc-yolov3-tracker/VideoDeneme/chineserest/video/chineserestaruant.avi")
+    pass
