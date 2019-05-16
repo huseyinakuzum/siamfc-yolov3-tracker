@@ -13,3 +13,4 @@ siamfc/siamfc/__pycache__/*
 yolov3/__pycache__/*
 __pycacahe__/*
 .pylintrc
+videos/*
