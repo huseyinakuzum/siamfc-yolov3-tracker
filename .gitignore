@@ -1,4 +1,4 @@
-videos/*
+ideos/*
 yolov3/yolov3.weights
 yolov3/__pycacahe__/*
 siamfc/__pycacahe__/*
@@ -11,3 +11,5 @@ DATA/*
 __pycache__/*
 siamfc/siamfc/__pycache__/*
 yolov3/__pycache__/*
+__pycacahe__/*
+.pylintrc
