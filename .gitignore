@@ -9,5 +9,5 @@ venv/*
 DATA/*
 .vscode/*
 __pycache__/*
-./siamfc/siamfc/__pycache__/*
-./yolov3/__pycache__/*
+siamfc/siamfc/__pycache__/*
+yolov3/__pycache__/*
