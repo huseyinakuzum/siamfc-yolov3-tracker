@@ -5,6 +5,12 @@ This time around, for v3, authors has supplied a weightsfile only for COCO [here
 ```
 wget https://pjreddie.com/media/files/yolov3.weights 
 ```
+To install required packages run command below.
+
+```
+pip install -r requirements.txt
+```
+
 
 
 
